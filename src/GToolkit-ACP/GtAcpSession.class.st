@@ -12,7 +12,9 @@ Class {
 		'plan',
 		'pendingPermissions',
 		'availableCommands',
-		'announcer'
+		'announcer',
+		'client',
+		'permissionHistory'
 	],
 	#category : 'GToolkit-ACP',
 	#package : 'GToolkit-ACP'
@@ -74,6 +76,16 @@ GtAcpSession >> availableModes [
 { #category : 'accessing' }
 GtAcpSession >> availableModes: aCollection [
 	availableModes := aCollection
+]
+
+{ #category : 'accessing' }
+GtAcpSession >> client [
+	^ client
+]
+
+{ #category : 'accessing' }
+GtAcpSession >> client: aGtAcpClient [
+	client := aGtAcpClient
 ]
 
 { #category : 'private' }
@@ -144,6 +156,90 @@ GtAcpSession >> gtMessagesFor: aView [
 		itemText: [ :msg | msg role asString, ': ', msg preview ]
 ]
 
+{ #category : 'gt-views' }
+GtAcpSession >> gtPermissionDetailsFor: aView [
+	<gtView>
+	^ aView columnedList
+		title: 'Permission Details';
+		priority: 16;
+		items: [ (permissionHistory ifNil: [ #() ]) reversed ];
+		column: 'Status' text: [ :req | 
+			| status |
+			status := req at: 'status' ifAbsent: [ '?' ].
+			status = 'auto-allowed'
+				ifTrue: [ status asRopedText foreground: Color gray ]
+				ifFalse: [ status = 'allowed'
+					ifTrue: [ status asRopedText foreground: Color darkGreen ]
+					ifFalse: [ status asRopedText foreground: Color red ] ] ] width: 110;
+		column: 'Tool' text: [ :req | 
+			| title |
+			title := (req at: 'toolCall' ifAbsent: [ Dictionary new ]) 
+				at: 'title' ifAbsent: [ '?' ].
+			"Strip common mcp prefix for readability"
+			(title beginsWith: 'mcp__gtmcp__')
+				ifTrue: [ title allButFirst: 12 ]
+				ifFalse: [ title ] ] width: 180;
+		column: 'Input' text: [ :req |
+			| rawInput |
+			rawInput := (req at: 'toolCall' ifAbsent: [ Dictionary new ])
+				at: 'rawInput' ifAbsent: [ Dictionary new ].
+			', ' join: (rawInput associations collect: [ :assoc |
+				assoc key asString, ': ', assoc value printString ]) ] width: 350;
+		column: 'Decision' text: [ :req |
+			', ' join: ((req at: 'options' ifAbsent: [ #() ]) collect: [ :o | o at: 'name' ifAbsent: [ '?' ] ]) ] width: 200
+]
+
+{ #category : 'gt - views' }
+GtAcpSession >> gtPermissionsFor: aView [
+	<gtView>
+	^ aView columnedTree
+		title: 'Permissions';
+		priority: 15;
+		items: [ (permissionHistory ifNil: [ #() ]) reversed ];
+		expandAll;
+		children: [ :item |
+			(item isKindOf: Association)
+				ifTrue: [ 
+					(item value isDictionary)
+						ifTrue: [ item value associations ]
+						ifFalse: [ 
+							(item value isArray or: [ item value isKindOf: OrderedCollection ])
+								ifTrue: [ item value collectWithIndex: [ :v :i | i -> v ] ]
+								ifFalse: [ #() ] ] ]
+				ifFalse: [
+					(item isDictionary)
+						ifTrue: [ 
+							| interesting |
+							interesting := item associations select: [ :a | 
+								(#('requestId' 'sessionId' 'status' 'timestamp') includes: a key) not ].
+							interesting ]
+						ifFalse: [ #() ] ] ];
+		column: 'Key' text: [ :item |
+			(item isKindOf: Association)
+				ifTrue: [ item key ]
+				ifFalse: [
+					(item isDictionary)
+						ifTrue: [ (item at: 'toolCall' ifAbsent: [ Dictionary new ]) at: 'title' ifAbsent: [ '?' ] ]
+						ifFalse: [ item ] ] ] width: 250;
+		column: 'Value' text: [ :item |
+			(item isKindOf: Association)
+				ifTrue: [ 
+					(item value isDictionary or: [ item value isArray or: [ item value isKindOf: OrderedCollection ] ])
+						ifTrue: [ '' ]
+						ifFalse: [ item value printString ] ]
+				ifFalse: [
+					(item isDictionary)
+						ifTrue: [ item at: 'status' ifAbsent: [ '' ] ]
+						ifFalse: [ '' ] ] ] width: 200;
+		column: 'Time' text: [ :item |
+			(item isKindOf: Association)
+				ifTrue: [ '' ]
+				ifFalse: [
+					(item isDictionary)
+						ifTrue: [ (item at: 'timestamp' ifAbsent: [ '' ]) printString ]
+						ifFalse: [ '' ] ] ] width: 180
+]
+
 { #category : 'gt views' }
 GtAcpSession >> gtPlanFor: aView [
 	<gtView>
@@ -153,12 +249,23 @@ GtAcpSession >> gtPlanFor: aView [
 		items: [ plan ]
 ]
 
+{ #category : 'gt - views' }
+GtAcpSession >> gtShellFor: aView [
+	<gtView>
+	^ aView explicit
+		title: 'Shell';
+		priority: 5;
+		stencil: [ 
+			GtAcpShellElement on: client session: self ]
+]
+
 { #category : 'initialization' }
 GtAcpSession >> initialize [
 	super initialize.
 	messages := OrderedCollection new.
 	plan := OrderedCollection new.
 	pendingPermissions := OrderedCollection new.
+	permissionHistory := OrderedCollection new.
 	availableCommands := OrderedCollection new.
 	availableModes := #().
 	availableModels := #().
@@ -180,6 +287,11 @@ GtAcpSession >> messages [
 { #category : 'accessing' }
 GtAcpSession >> pendingPermissions [
 	^ pendingPermissions
+]
+
+{ #category : 'accessing' }
+GtAcpSession >> permissionHistory [
+	^ permissionHistory ifNil: [ permissionHistory := OrderedCollection new ]
 ]
 
 { #category : 'accessing' }

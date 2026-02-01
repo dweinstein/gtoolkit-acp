@@ -89,15 +89,20 @@ GtAcpClient >> gtTrafficFor: aView [
 		ifNotNil: [ transport gtTrafficFor: aView ]
 ]
 
-{ #category : 'private' }
+{ #category : 'handlers' }
 GtAcpClient >> handlePermissionRequest: params requestId: anId [
 	| sessionId session request |
 	sessionId := params at: 'sessionId'.
 	session := sessions at: sessionId ifAbsent: [ ^ self ].
 	request := params copy.
 	request at: 'requestId' put: anId.
+	request at: 'timestamp' put: DateAndTime now.
+	request at: 'status' put: 'auto-allowed'.
 	session pendingPermissions add: request.
-	session announcer announce: GtAcpPermissionRequested new
+	session permissionHistory add: request.
+	session announcer announce: GtAcpPermissionRequested new.
+	"Auto-allow for now — TODO: add UI for interactive approval"
+	self allowPermission: anId
 ]
 
 { #category : 'private' }
@@ -135,7 +140,7 @@ GtAcpClient >> isConnected [
 	^ transport notNil and: [ transport isRunning ]
 ]
 
-{ #category : 'session management' }
+{ #category : 'protocol' }
 GtAcpClient >> newSessionIn: aDirectoryString do: aBlock onError: anErrorBlock [
 	transport
 		sendRequest: 'session/new'
@@ -147,6 +152,7 @@ GtAcpClient >> newSessionIn: aDirectoryString do: aBlock onError: anErrorBlock [
 			| session |
 			session := GtAcpSession fromResponse: result.
 			session cwd: aDirectoryString.
+			session client: self.
 			sessions at: session sessionId put: session.
 			aBlock cull: session ]
 		onError: anErrorBlock

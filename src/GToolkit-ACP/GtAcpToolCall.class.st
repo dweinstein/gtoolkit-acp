@@ -17,6 +17,9 @@ Class {
 
 { #category : 'instance creation' }
 GtAcpToolCall class >> fromDictionary: aDictionary [
+	| input |
+	input := aDictionary at: 'rawInput' ifAbsent: [ nil ].
+	(input notNil and: [ input isEmpty ]) ifTrue: [ input := nil ].
 	^ self new
 		toolCallId: (aDictionary at: 'toolCallId' ifAbsent: [ nil ]);
 		title: (aDictionary at: 'title' ifAbsent: [ nil ]);
@@ -24,7 +27,7 @@ GtAcpToolCall class >> fromDictionary: aDictionary [
 		status: (aDictionary at: 'status' ifAbsent: [ 'pending' ]);
 		content: (aDictionary at: 'content' ifAbsent: [ #() ]);
 		locations: (aDictionary at: 'locations' ifAbsent: [ #() ]);
-		rawInput: (aDictionary at: 'rawInput' ifAbsent: [ nil ]);
+		rawInput: input;
 		rawOutput: (aDictionary at: 'output' ifAbsent: [ nil ]);
 		yourself
 ]
@@ -41,6 +44,13 @@ GtAcpToolCall >> applyUpdate: aDictionary [
 		(aDictionary at: 'content') ifNotNil: [ :value | content := value ] ].
 	(aDictionary includesKey: 'locations') ifTrue: [ 
 		(aDictionary at: 'locations') ifNotNil: [ :value | locations := value ] ].
+	(aDictionary includesKey: 'rawInput') ifTrue: [
+		| newInput |
+		newInput := aDictionary at: 'rawInput'.
+		(newInput notNil and: [ newInput notEmpty ])
+			ifTrue: [ rawInput := newInput ] ].
+	(aDictionary includesKey: 'rawOutput') ifTrue: [ 
+		(aDictionary at: 'rawOutput') ifNotNil: [ :value | rawOutput := value ] ].
 	(aDictionary includesKey: 'output') ifTrue: [ 
 		(aDictionary at: 'output') ifNotNil: [ :value | rawOutput := value ] ].
 	"Extract tool response from _meta if present"

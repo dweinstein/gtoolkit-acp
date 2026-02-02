@@ -5,7 +5,8 @@ Class {
 		'transport',
 		'sessions',
 		'announcer',
-		'agentInfo'
+		'agentInfo',
+		'createdAt'
 	],
 	#category : 'GToolkit-ACP',
 	#package : 'GToolkit-ACP'
@@ -70,16 +71,68 @@ GtAcpClient >> connectTo: programPath [
 	^ self connectTo: programPath args: #()
 ]
 
-{ #category : 'lifecycle' }
+{ #category : 'connecting' }
 GtAcpClient >> connectTo: programPath args: anArray [
 	transport := GtAcpTransport on: programPath args: anArray.
+	transport onExit: [ announcer announce: GtAcpClientUpdated new ].
 	self registerHandlers.
 	transport start
 ]
 
-{ #category : 'lifecycle' }
+{ #category : 'accessing' }
+GtAcpClient >> createdAt [
+	^ createdAt ifNil: [ DateAndTime epoch ]
+]
+
+{ #category : 'connecting' }
 GtAcpClient >> disconnect [
-	transport ifNotNil: [ transport terminate ]
+	transport ifNotNil: [ transport terminate ].
+	announcer announce: GtAcpClientUpdated new
+]
+
+{ #category : 'actions' }
+GtAcpClient >> gtDisconnectActionFor: anAction [
+	<gtAction>
+	self isConnected ifFalse: [ ^ anAction noAction ].
+	^ anAction button
+		tooltip: 'Disconnect';
+		icon: BrGlamorousVectorIcons cancel;
+		action: [ :aButton | self disconnect ]
+]
+
+{ #category : 'actions' }
+GtAcpClient >> gtNewSessionActionFor: anAction [
+	<gtAction>
+	^ anAction dropdown
+		tooltip: 'New session';
+		icon: BrGlamorousVectorIcons add;
+		content: [ :aButton |
+			| items |
+			items := OrderedCollection new.
+			GtAcpClientRegistry uniqueInstance recentCwds do: [ :aCwd |
+				items add: (aCwd -> [ :e |
+					self newSessionIn: aCwd do: [ :session |
+						e enqueueTask: (BlTaskAction new action: [
+							e phlow spawnObject: session ]) ]
+					onError: [ :err |
+						e enqueueTask: (BlTaskAction new action: [
+							e phlow spawnObject: ('Session error: ', err printString) ]) ].
+					e fireEvent: BrDropdownHideWish new ]) ].
+			items add: ('Browse...' -> [ :e |
+				e fireEvent: BrDropdownHideWish new.
+				e phlow spawnObject: GtClaudeCodeClient defaultCwd asFileReference ]).
+			BrGlamorousSimpleContextMenuContent new
+				items: items;
+				yourself ]
+]
+
+{ #category : 'actions' }
+GtAcpClient >> gtRemoveActionFor: anAction [
+	<gtAction>
+	^ anAction button
+		tooltip: 'Remove from registry';
+		icon: BrGlamorousVectorIcons close;
+		action: [ :aButton | GtAcpClientRegistry uniqueInstance unregister: self ]
 ]
 
 { #category : 'gt views' }
@@ -134,7 +187,9 @@ GtAcpClient >> handleSessionUpdate: params [
 GtAcpClient >> initialize [
 	super initialize.
 	sessions := Dictionary new.
-	announcer := Announcer new
+	announcer := Announcer new.
+	createdAt := DateAndTime now.
+	GtAcpClientRegistry uniqueInstance register: self
 ]
 
 { #category : 'lifecycle' }

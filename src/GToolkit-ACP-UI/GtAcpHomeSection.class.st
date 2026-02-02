@@ -11,8 +11,8 @@ GtAcpHomeSection >> acpShellCard [
 	| card |
 	card := GtHomeCard explicit.
 	^ card
-		title: 'ACP Shell';
-		description: 'New Claude Code session';
+		title: 'Claude Code';
+		description: 'Browse and manage agent sessions';
 		priority: 10;
 		stencil: [
 			| container titleLabel subtitleLabel |
@@ -20,10 +20,10 @@ GtAcpHomeSection >> acpShellCard [
 				beLargeSize;
 				padding: (BlInsets bottom: 5);
 				aptitude: BrGlamorousLabelAptitude new bold;
-				text: 'ACP Shell'.
+				text: 'Claude Code'.
 			subtitleLabel := BrLabel new
 				aptitude: (BrGlamorousLabelAptitude new foreground: Color gray; fontSize: 12);
-				text: 'New Claude Code session'.
+				text: 'Browse and manage agent sessions'.
 			container := BrVerticalPane new
 				exact: 250 @ 150;
 				background: Color white;
@@ -39,30 +39,13 @@ GtAcpHomeSection >> acpShellCard [
 					right: 2 * self spaceGap);
 				when: BlClickEvent do: [ :anEvent |
 					anEvent consumed: true.
-					self launchShellFrom: container ].
+					container phlow spawnOrShowObject: GtAcpClientRegistry uniqueInstance ].
 			container addChild: titleLabel preventMeAndChildrenMouseEvents.
 			container addChild: subtitleLabel preventMeAndChildrenMouseEvents.
 			container ]
 ]
 
-{ #category : 'actions' }
-GtAcpHomeSection >> launchShellFrom: anElement [
-	| client |
-	client := GtAcpClient new.
-	client connectTo: '/Users/user/.nvm/versions/node/v20.12.2/bin/node' args: #('/Users/user/personal/acp/claude-code-acp/dist/index.js').
-	client initializeDo: [ :result |
-		client newSessionIn: '/Users/user/personal/gt' do: [ :session |
-			anElement enqueueTask: (BlTaskAction new action: [
-				anElement phlow spawnOrShowObject: session ]) ]
-		onError: [ :err |
-			anElement enqueueTask: (BlTaskAction new action: [
-				anElement phlow spawnOrShowObject: ('Session error: ' , err printString) ]) ] ]
-	onError: [ :err |
-		anElement enqueueTask: (BlTaskAction new action: [
-			anElement phlow spawnOrShowObject: ('Init error: ' , err printString) ]) ]
-]
-
 { #category : 'accessing' }
 GtAcpHomeSection >> sectionTitle [
-	^ 'ACP Shell'
+	^ 'Agents'
 ]

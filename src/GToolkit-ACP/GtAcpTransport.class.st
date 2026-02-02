@@ -15,7 +15,8 @@ Class {
 		'errorHandlers',
 		'methodHandlers',
 		'pendingInput',
-		'messageLog'
+		'messageLog',
+		'onExitBlock'
 	],
 	#category : 'GToolkit-ACP',
 	#package : 'GToolkit-ACP'
@@ -58,7 +59,7 @@ GtAcpTransport >> getNextId [
 GtAcpTransport >> gtMessageLogFor: aView [
 	<gtView>
 	^ aView columnedList
-		title: 'Traffic';
+		title: 'Log';
 		priority: 10;
 		items: [ messageLog reversed ];
 		column: 'Time' text: [ :entry | entry timestamp asTime print24 ] width: 100;
@@ -102,7 +103,8 @@ GtAcpTransport >> gtTrafficFor: aView [
 { #category : 'private' }
 GtAcpTransport >> handleProcessExit [
 	errorHandlers do: [ :anErrorHandler | anErrorHandler cull: nil ].
-	self terminate
+	self terminate.
+	onExitBlock ifNotNil: [ onExitBlock value ]
 ]
 
 { #category : 'private' }
@@ -148,6 +150,11 @@ GtAcpTransport >> on: aMethod do: aBlock [
 	aBlock
 		ifNil: [ methodHandlers removeKey: aMethod ifAbsent: [  ] ]
 		ifNotNil: [ methodHandlers at: aMethod put: aBlock ]
+]
+
+{ #category : 'accessing' }
+GtAcpTransport >> onExit: aBlock [
+	onExitBlock := aBlock
 ]
 
 { #category : 'printing' }

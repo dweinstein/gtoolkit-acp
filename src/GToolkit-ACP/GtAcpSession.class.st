@@ -152,6 +152,16 @@ GtAcpSession >> cwd: aString [
 	cwd := aString
 ]
 
+{ #category : 'actions' }
+GtAcpSession >> gtCancelActionFor: anAction [
+	<gtAction>
+	(client isNil or: [ client isConnected not ]) ifTrue: [ ^ anAction noAction ].
+	^ anAction button
+		tooltip: 'Cancel current operation';
+		icon: BrGlamorousVectorIcons cancel;
+		action: [ :aButton | client cancelSession: self ]
+]
+
 { #category : 'gt views' }
 GtAcpSession >> gtMessagesFor: aView [
 	<gtView>
@@ -263,6 +273,16 @@ GtAcpSession >> gtShellFor: aView [
 		priority: 5;
 		stencil: [ 
 			GtAcpShellElement on: client session: self ]
+]
+
+{ #category : 'actions' }
+GtAcpSession >> gtTerminateActionFor: anAction [
+	<gtAction>
+	client ifNil: [ ^ anAction noAction ].
+	^ anAction button
+		tooltip: 'Terminate session';
+		icon: BrGlamorousVectorIcons close;
+		action: [ :aButton | client removeSession: self ]
 ]
 
 { #category : 'initialization' }

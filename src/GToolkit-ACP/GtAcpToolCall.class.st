@@ -18,13 +18,13 @@ Class {
 { #category : 'instance creation' }
 GtAcpToolCall class >> fromDictionary: aDictionary [
 	^ self new
-		toolCallId: (aDictionary at: 'tool_call_id' ifAbsent: [ nil ]);
+		toolCallId: (aDictionary at: 'toolCallId' ifAbsent: [ nil ]);
 		title: (aDictionary at: 'title' ifAbsent: [ nil ]);
 		kind: (aDictionary at: 'kind' ifAbsent: [ nil ]);
 		status: (aDictionary at: 'status' ifAbsent: [ 'pending' ]);
 		content: (aDictionary at: 'content' ifAbsent: [ #() ]);
 		locations: (aDictionary at: 'locations' ifAbsent: [ #() ]);
-		rawInput: (aDictionary at: 'input' ifAbsent: [ nil ]);
+		rawInput: (aDictionary at: 'rawInput' ifAbsent: [ nil ]);
 		rawOutput: (aDictionary at: 'output' ifAbsent: [ nil ]);
 		yourself
 ]
@@ -42,7 +42,13 @@ GtAcpToolCall >> applyUpdate: aDictionary [
 	(aDictionary includesKey: 'locations') ifTrue: [ 
 		(aDictionary at: 'locations') ifNotNil: [ :value | locations := value ] ].
 	(aDictionary includesKey: 'output') ifTrue: [ 
-		(aDictionary at: 'output') ifNotNil: [ :value | rawOutput := value ] ]
+		(aDictionary at: 'output') ifNotNil: [ :value | rawOutput := value ] ].
+	"Extract tool response from _meta if present"
+	(aDictionary at: '_meta' ifAbsent: [ nil ]) ifNotNil: [ :meta |
+		(meta at: 'claudeCode' ifAbsent: [ nil ]) ifNotNil: [ :cc |
+			(cc at: 'toolResponse' ifAbsent: [ nil ]) ifNotNil: [ :response |
+				rawOutput := response.
+				status := 'completed' ] ] ]
 ]
 
 { #category : 'accessing' }
@@ -55,7 +61,7 @@ GtAcpToolCall >> content: anArray [
 	content := anArray
 ]
 
-{ #category : 'gt views' }
+{ #category : 'views' }
 GtAcpToolCall >> gtDetailsFor: aView [
 	<gtView>
 	^ aView columnedList
@@ -66,10 +72,24 @@ GtAcpToolCall >> gtDetailsFor: aView [
 			'title' -> title.
 			'kind' -> kind.
 			'status' -> status.
-			'rawInput' -> rawInput
+			'rawInput' -> rawInput.
+			'rawOutput' -> rawOutput
 		} ];
-		column: 'Key' text: [ :assoc | assoc key ];
-		column: 'Value' text: [ :assoc | assoc value asString ] width: 300
+		column: 'Key' text: [ :assoc | assoc key ] width: 100;
+		column: 'Value' text: [ :assoc | assoc value asString ] weight: 1
+]
+
+{ #category : 'accessing' }
+GtAcpToolCall >> inputSummary [
+	"Return a short string summarizing the key input parameter, or nil"
+	(rawInput isNil or: [ rawInput isEmpty ]) ifTrue: [ ^ nil ].
+	rawInput size = 1 ifTrue: [ 
+		^ rawInput values first asString truncateTo: 80 ].
+	"For multiple params, show first meaningful one"
+	#('methodReference' 'expression' 'packageName' 'name' 'className' 'pageTitle' 'query' 'snippetUid' 'pattern') do: [ :key |
+		(rawInput at: key ifAbsent: [ nil ]) ifNotNil: [ :val |
+			^ val asString truncateTo: 80 ] ].
+	^ rawInput keys first, ': ', (rawInput values first asString truncateTo: 60)
 ]
 
 { #category : 'testing' }
@@ -116,8 +136,11 @@ GtAcpToolCall >> locations: anArray [
 GtAcpToolCall >> printOn: aStream [
 	aStream nextPutAll: 'GtAcpToolCall('.
 	title ifNotNil: [ aStream nextPutAll: title ] ifNil: [ aStream nextPutAll: 'untitled' ].
-	aStream nextPutAll: ' - '.
+	self inputSummary ifNotNil: [ :summary |
+		aStream nextPutAll: ' - '; nextPutAll: summary ].
+	aStream nextPutAll: ' ['.
 	status ifNotNil: [ aStream nextPutAll: status ] ifNil: [ aStream nextPutAll: 'unknown' ].
+	aStream nextPutAll: ']'.
 	aStream nextPut: $)
 ]
 

@@ -14,7 +14,8 @@ Class {
 		'availableCommands',
 		'announcer',
 		'client',
-		'permissionHistory'
+		'permissionHistory',
+		'alwaysAllowedTools'
 	],
 	#category : 'GToolkit-ACP',
 	#package : 'GToolkit-ACP'
@@ -41,6 +42,11 @@ GtAcpSession class >> fromResponse: aDictionary [
 GtAcpSession >> addPermissionRequest: aDictionary [
 	pendingPermissions add: aDictionary.
 	announcer announce: GtAcpPermissionRequested new
+]
+
+{ #category : 'accessing' }
+GtAcpSession >> alwaysAllowedTools [
+	^ alwaysAllowedTools ifNil: [ alwaysAllowedTools := Set new ]
 ]
 
 { #category : 'accessing' }
@@ -345,12 +351,21 @@ GtAcpSession >> processPlan: aDictionary [
 	announcer announce: GtAcpSessionUpdated new
 ]
 
-{ #category : 'updating' }
+{ #category : 'processing' }
 GtAcpSession >> processToolCall: aDictionary [
-	| message toolCall |
+	| message toolCall toolCallId existing |
 	message := self currentAssistantMessage.
-	toolCall := GtAcpToolCall fromDictionary: aDictionary.
-	message addToolCall: toolCall.
+	toolCallId := aDictionary at: 'toolCallId' ifAbsent: [ nil ].
+	"Check if this is an update to an existing tool call"
+	(toolCallId notNil and: [ 
+		existing := message toolCalls 
+			detect: [ :tc | tc toolCallId = toolCallId ] 
+			ifNone: [ nil ].
+		existing notNil ])
+		ifTrue: [ existing applyUpdate: aDictionary ]
+		ifFalse: [ 
+			toolCall := GtAcpToolCall fromDictionary: aDictionary.
+			message addToolCall: toolCall ].
 	announcer announce: GtAcpSessionUpdated new
 ]
 

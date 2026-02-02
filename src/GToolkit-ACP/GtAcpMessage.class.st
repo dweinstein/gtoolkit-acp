@@ -67,7 +67,7 @@ GtAcpMessage >> fullText [
 			thenDo: [ :block | stream nextPutAll: block text; cr ] ]
 ]
 
-{ #category : 'gt views' }
+{ #category : 'views' }
 GtAcpMessage >> gtContentFor: aView [
 	<gtView>
 	^ aView columnedList
@@ -80,13 +80,21 @@ GtAcpMessage >> gtContentFor: aView [
 				ifFalse: [ (item isKindOf: GtAcpToolCall)
 					ifTrue: [ 'Tool Call' ]
 					ifFalse: [ item class name ] ] ] width: 100;
+		column: 'Status' text: [ :item |
+			(item isKindOf: GtAcpToolCall)
+				ifTrue: [ item status ifNil: [ '' ] ]
+				ifFalse: [ '' ] ] width: 80;
 		column: 'Preview' text: [ :item |
 			(item isKindOf: GtAcpTextBlock)
 				ifTrue: [ (item text size > 100)
 					ifTrue: [ (item text first: 100), '...' ]
 					ifFalse: [ item text ] ]
 				ifFalse: [ (item isKindOf: GtAcpToolCall)
-					ifTrue: [ item toolName, ' (', item toolCallId, ')' ]
+					ifTrue: [ 
+						| preview |
+						preview := item title ifNil: [ 'unknown' ].
+						item inputSummary ifNotNil: [ :s | preview := preview, ' - ', s ].
+						preview ]
 					ifFalse: [ item asString ] ] ]
 ]
 

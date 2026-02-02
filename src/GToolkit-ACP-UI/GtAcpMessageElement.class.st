@@ -5,6 +5,7 @@ Class {
 		'message',
 		'contentsElement',
 		'roleElement',
+		'toolCallsContainer',
 		'subscriber'
 	],
 	#category : 'GToolkit-ACP-UI',
@@ -23,8 +24,10 @@ GtAcpMessageElement >> initialize [
 	self margin: (BlInsets top: 2 bottom: 2).
 	self initializeRoleElement.
 	self initializeContentsElement.
+	self initializeToolCallsContainer.
 	self addChild: roleElement as: #role.
-	self addChild: contentsElement as: #contents
+	self addChild: contentsElement as: #contents.
+	self addChild: toolCallsContainer as: #toolCalls
 ]
 
 { #category : 'initialization' }
@@ -46,6 +49,16 @@ GtAcpMessageElement >> initializeRoleElement [
 		margin: (BlInsets bottom: 4)
 ]
 
+{ #category : 'initialization' }
+GtAcpMessageElement >> initializeToolCallsContainer [
+	toolCallsContainer := BlElement new
+		layout: BlLinearLayout vertical;
+		constraintsDo: [ :c |
+			c horizontal matchParent.
+			c vertical fitContent ];
+		yourself
+]
+
 { #category : 'accessing' }
 GtAcpMessageElement >> message [
 	^ message
@@ -58,6 +71,7 @@ GtAcpMessageElement >> message: aGtAcpMessage [
 	message := aGtAcpMessage.
 	self updateRole.
 	self updateContents.
+	self updateToolCalls.
 	message announcer 
 		when: GtAcpMessageUpdated 
 		send: #onMessageUpdated: 
@@ -66,7 +80,9 @@ GtAcpMessageElement >> message: aGtAcpMessage [
 
 { #category : 'updating' }
 GtAcpMessageElement >> onMessageUpdated: anAnnouncement [
-	self enqueueTask: (BlTaskAction new action: [ self updateContents ])
+	self enqueueTask: (BlTaskAction new action: [ 
+		self updateContents.
+		self updateToolCalls ])
 ]
 
 { #category : 'updating' }
@@ -82,4 +98,11 @@ GtAcpMessageElement >> updateRole [
 		ifTrue: [ BrGlamorousColors primaryBorderColor ]
 		ifFalse: [ BrGlamorousColors successBackgroundColor ].
 	roleElement text: (roleName asRopedText foreground: color)
+]
+
+{ #category : 'updating' }
+GtAcpMessageElement >> updateToolCalls [
+	toolCallsContainer removeChildren.
+	(message toolCalls ifNil: [ #() ]) do: [ :tc |
+		toolCallsContainer addChild: (GtAcpToolCallElement new toolCall: tc) ]
 ]

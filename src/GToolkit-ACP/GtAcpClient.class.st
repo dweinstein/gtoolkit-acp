@@ -41,6 +41,16 @@ GtAcpClient >> allowPermission: aRequestId [
 		yourself)
 ]
 
+{ #category : 'protocol' }
+GtAcpClient >> allowPermissionRequest: aRequestId optionId: anOptionId [
+	transport respondTo: aRequestId result: (Dictionary new
+		at: 'outcome' put: (Dictionary new 
+			at: 'outcome' put: 'selected'; 
+			at: 'optionId' put: anOptionId; 
+			yourself);
+		yourself)
+]
+
 { #category : 'accessing' }
 GtAcpClient >> announcer [
 	^ announcer
@@ -91,18 +101,24 @@ GtAcpClient >> gtTrafficFor: aView [
 
 { #category : 'handlers' }
 GtAcpClient >> handlePermissionRequest: params requestId: anId [
-	| sessionId session request |
+	| sessionId session request toolTitle |
 	sessionId := params at: 'sessionId'.
 	session := sessions at: sessionId ifAbsent: [ ^ self ].
+	toolTitle := (params at: 'toolCall' ifAbsent: [ Dictionary new ]) at: 'title' ifAbsent: [ '' ].
 	request := params copy.
 	request at: 'requestId' put: anId.
 	request at: 'timestamp' put: DateAndTime now.
-	request at: 'status' put: 'auto-allowed'.
-	session pendingPermissions add: request.
-	session permissionHistory add: request.
-	session announcer announce: GtAcpPermissionRequested new.
-	"Auto-allow for now — TODO: add UI for interactive approval"
-	self allowPermission: anId
+	"Auto-allow if tool was previously always-allowed in this session"
+	(session alwaysAllowedTools includes: toolTitle)
+		ifTrue: [
+			request at: 'status' put: 'auto-allowed'.
+			session permissionHistory add: request.
+			self allowPermissionRequest: anId optionId: 'allow_always' ]
+		ifFalse: [
+			request at: 'status' put: 'pending'.
+			session pendingPermissions add: request.
+			session permissionHistory add: request.
+			session announcer announce: GtAcpPermissionRequested new ]
 ]
 
 { #category : 'private' }

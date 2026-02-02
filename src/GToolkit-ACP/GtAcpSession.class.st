@@ -275,16 +275,6 @@ GtAcpSession >> gtShellFor: aView [
 			GtAcpShellElement on: client session: self ]
 ]
 
-{ #category : 'actions' }
-GtAcpSession >> gtTerminateActionFor: anAction [
-	<gtAction>
-	client ifNil: [ ^ anAction noAction ].
-	^ anAction button
-		tooltip: 'Terminate session';
-		icon: BrGlamorousVectorIcons close;
-		action: [ :aButton | client removeSession: self ]
-]
-
 { #category : 'initialization' }
 GtAcpSession >> initialize [
 	super initialize.

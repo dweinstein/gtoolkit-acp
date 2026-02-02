@@ -5,16 +5,76 @@ Class {
 		'toolCall',
 		'headerElement',
 		'statusIcon',
-		'titleLabel'
+		'titleLabel',
+		'errorLabel',
+		'expandArrow',
+		'detailContainer',
+		'isExpanded'
 	],
 	#category : 'GToolkit-ACP-UI',
 	#package : 'GToolkit-ACP-UI'
 }
 
+{ #category : 'private' }
+GtAcpToolCallElement >> buildDetailContent [
+	"Build expanded detail view showing input params and output, similar to Claude Code CLI format"
+	detailContainer removeChildren.
+	
+	"Input parameters"
+	(toolCall rawInput notNil and: [ toolCall rawInput notEmpty ]) ifTrue: [
+		| inputPane |
+		inputPane := BrVerticalPane new hMatchParent; vFitContent.
+		toolCall rawInput keysAndValuesDo: [ :key :value |
+			| line valueText |
+			valueText := value asString.
+			valueText size > 300 ifTrue: [ valueText := (valueText first: 300), '...' ].
+			line := BrLabel new
+				aptitude: (BrGlamorousLabelAptitude new fontSize: 11; foreground: Color darkGray);
+				hMatchParent; vFitContent;
+				text: (key asString, ': ', valueText) ].
+		toolCall rawInput keysAndValuesDo: [ :key :value |
+			| valueText |
+			valueText := value asString.
+			valueText size > 300 ifTrue: [ valueText := (valueText first: 300), '...' ].
+			inputPane addChild: (BrLabel new
+				aptitude: (BrGlamorousLabelAptitude new fontSize: 11; foreground: Color darkGray);
+				hMatchParent; vFitContent;
+				text: (key asString, ': ', valueText)) ].
+		detailContainer addChild: inputPane ].
+	
+	"Output / response"
+	toolCall rawOutput ifNotNil: [ :output |
+		| outputText outputLabel sep |
+		outputText := output asString.
+		outputText size > 500 ifTrue: [ outputText := (outputText first: 500), '...' ].
+		sep := BrLabel new
+			aptitude: (BrGlamorousLabelAptitude new fontSize: 10; foreground: Color gray);
+			text: '───'.
+		outputLabel := BrLabel new
+			aptitude: (BrGlamorousLabelAptitude new fontSize: 11; 
+				foreground: (toolCall status = 'failed' 
+					ifTrue: [ Color red darker ] 
+					ifFalse: [ Color darkGray ]));
+			hMatchParent; vFitContent;
+			text: outputText.
+		detailContainer addChild: sep.
+		detailContainer addChild: outputLabel ].
+	
+	"Click to inspect in detail"
+	detailContainer addChild: (BrLabel new
+		aptitude: (BrGlamorousLabelAptitude new fontSize: 10; foreground: (Color blue alpha: 0.7));
+		text: 'click to inspect';
+		margin: (BlInsets top: 2);
+		when: BlClickEvent do: [ :e |
+			e consumed: true.
+			self phlow spawnOrShowObject: toolCall ])
+]
+
 { #category : 'initialization' }
 GtAcpToolCallElement >> initialize [
 	super initialize.
-	self layout: BlLinearLayout horizontal alignCenterLeft.
+	isExpanded := false.
+	self layout: BlLinearLayout vertical.
 	self constraintsDo: [ :c |
 		c horizontal matchParent.
 		c vertical fitContent ].
@@ -22,9 +82,15 @@ GtAcpToolCallElement >> initialize [
 	self margin: (BlInsets top: 2 bottom: 2).
 	self background: (Color veryLightGray alpha: 0.2).
 	self border: (BlBorder paint: (Color gray alpha: 0.3) width: 1).
-	self when: BlClickEvent do: [ :e | 
+	
+	"Header row: status icon + title + expand arrow"
+	headerElement := BrHorizontalPane new
+		hMatchParent;
+		vFitContent;
+		alignCenterLeft.
+	headerElement when: BlClickEvent do: [ :e |
 		e consumed: true.
-		self phlow spawnOrShowObject: toolCall ].
+		self toggleExpanded ].
 	statusIcon := BrLabel new
 		aptitude: (BrGlamorousLabelAptitude new fontSize: 12);
 		text: '...';
@@ -33,8 +99,51 @@ GtAcpToolCallElement >> initialize [
 		aptitude: (BrGlamorousLabelAptitude new fontSize: 11; foreground: Color darkGray);
 		hMatchParent;
 		vFitContent.
-	self addChild: statusIcon.
-	self addChild: titleLabel
+	expandArrow := BrLabel new
+		aptitude: (BrGlamorousLabelAptitude new fontSize: 10; foreground: Color gray);
+		text: '>';
+		margin: (BlInsets left: 6).
+	headerElement addChild: statusIcon.
+	headerElement addChild: titleLabel.
+	headerElement addChild: expandArrow.
+	
+	"Detail container (hidden by default)"
+	detailContainer := BrVerticalPane new
+		hMatchParent;
+		vFitContent;
+		padding: (BlInsets top: 4 left: 18);
+		visibility: BlVisibility gone.
+	
+	"Error label (hidden by default)"
+	errorLabel := BrLabel new
+		aptitude: (BrGlamorousLabelAptitude new fontSize: 11; foreground: (Color red darker));
+		hMatchParent;
+		vFitContent;
+		padding: (BlInsets top: 2 left: 18);
+		visibility: BlVisibility gone.
+	
+	self addChild: headerElement.
+	self addChild: errorLabel.
+	self addChild: detailContainer
+]
+
+{ #category : 'actions' }
+GtAcpToolCallElement >> toggleExpanded [
+	isExpanded := isExpanded not.
+	isExpanded
+		ifTrue: [
+			expandArrow text: 'v'.
+			self buildDetailContent.
+			detailContainer visibility: BlVisibility visible ]
+		ifFalse: [
+			expandArrow text: '>'.
+			detailContainer removeChildren.
+			detailContainer visibility: BlVisibility gone ]
+]
+
+{ #category : 'accessing' }
+GtAcpToolCallElement >> toolCall [
+	^ toolCall
 ]
 
 { #category : 'accessing' }
@@ -45,12 +154,36 @@ GtAcpToolCallElement >> toolCall: aGtAcpToolCall [
 
 { #category : 'updating' }
 GtAcpToolCallElement >> update [
-	| icon |
-	titleLabel text: (toolCall title ifNil: [ 'Tool call' ]).
-	icon := toolCall status = 'completed'
-		ifTrue: [ '+' ]
-		ifFalse: [ toolCall status = 'failed'
-			ifTrue: [ 'x' ]
-			ifFalse: [ '...' ] ].
-	statusIcon text: icon
+	| titleText icon |
+	titleText := toolCall title ifNil: [ 'Tool call' ].
+	toolCall inputSummary ifNotNil: [ :s | titleText := titleText, ' - ', s ].
+	titleLabel text: titleText.
+	
+	toolCall status = 'completed' ifTrue: [
+		icon := '+'.
+		statusIcon aptitude foreground: Color gray.
+		self background: (Color veryLightGray alpha: 0.2).
+		self border: (BlBorder paint: (Color gray alpha: 0.3) width: 1).
+		errorLabel visibility: BlVisibility gone ].
+	toolCall status = 'failed' ifTrue: [
+		| errorText |
+		icon := 'x'.
+		statusIcon aptitude foreground: Color red.
+		self background: (Color red alpha: 0.05).
+		self border: (BlBorder paint: (Color red alpha: 0.3) width: 1).
+		errorText := toolCall rawOutput ifNil: [ '' ].
+		errorText isEmpty ifFalse: [
+			errorLabel text: (errorText asString truncateTo: 200).
+			errorLabel visibility: BlVisibility visible ] ].
+	(toolCall status = 'pending' or: [ toolCall status = 'in_progress' or: [ toolCall status isNil ] ]) ifTrue: [
+		icon := '...'.
+		statusIcon aptitude foreground: Color gray.
+		self background: (Color veryLightGray alpha: 0.2).
+		self border: (BlBorder paint: (Color gray alpha: 0.3) width: 1).
+		errorLabel visibility: BlVisibility gone ].
+	
+	statusIcon text: icon.
+	
+	"Refresh detail content if expanded"
+	isExpanded ifTrue: [ self buildDetailContent ]
 ]

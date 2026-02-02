@@ -102,7 +102,7 @@ GtAcpTransport >> gtTrafficFor: aView [
 
 { #category : 'private' }
 GtAcpTransport >> handleProcessExit [
-	errorHandlers do: [ :anErrorHandler | anErrorHandler cull: nil ].
+	errorHandlers do: [ :anErrorHandler | anErrorHandler cull: 'Process exited' ].
 	self terminate.
 	onExitBlock ifNotNil: [ onExitBlock value ]
 ]
@@ -259,7 +259,7 @@ GtAcpTransport >> sendNotification: aMethod params: aParams [
 GtAcpTransport >> sendRequest: aMethod params: aParams do: aBlock onError: errorBlock [
 	| id message |
 	(process isNil or: [ process isTerminated ])
-		ifTrue: [ errorBlock cull: nil.
+		ifTrue: [ errorBlock cull: 'Process not running'.
 			^ self ].
 	id := self getNextId.
 	resultHandlers

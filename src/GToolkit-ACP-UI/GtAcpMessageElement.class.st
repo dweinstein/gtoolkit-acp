@@ -102,7 +102,20 @@ GtAcpMessageElement >> updateRole [
 
 { #category : 'updating' }
 GtAcpMessageElement >> updateToolCalls [
-	toolCallsContainer removeChildren.
-	(message toolCalls ifNil: [ #() ]) do: [ :tc |
-		toolCallsContainer addChild: (GtAcpToolCallElement new toolCall: tc) ]
+	| existingElements currentToolCalls |
+	currentToolCalls := message toolCalls ifNil: [ #() ].
+	existingElements := toolCallsContainer children asOrderedCollection.
+	
+	"Update existing elements in place, add new ones"
+	currentToolCalls withIndexDo: [ :tc :index |
+		index <= existingElements size
+			ifTrue: [
+				| existing |
+				existing := existingElements at: index.
+				existing toolCall toolCallId = tc toolCallId
+					ifTrue: [ existing update ]
+					ifFalse: [ 
+						toolCallsContainer replaceChild: existing with: (GtAcpToolCallElement new toolCall: tc) ] ]
+			ifFalse: [
+				toolCallsContainer addChild: (GtAcpToolCallElement new toolCall: tc) ] ]
 ]

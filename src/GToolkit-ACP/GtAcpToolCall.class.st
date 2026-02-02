@@ -71,6 +71,18 @@ GtAcpToolCall >> content: anArray [
 	content := anArray
 ]
 
+{ #category : 'accessing' }
+GtAcpToolCall >> errorTextFromContent [
+	"Extract error text from the content array (used when rawOutput is nil on failed tool calls)"
+	(content isNil or: [ content isEmpty ]) ifTrue: [ ^ nil ].
+	content do: [ :entry |
+		| inner |
+		inner := entry at: 'content' ifAbsent: [ nil ].
+		(inner isKindOf: Dictionary) ifTrue: [
+			(inner at: 'text' ifAbsent: [ nil ]) ifNotNil: [ :text | ^ text ] ] ].
+	^ nil
+]
+
 { #category : 'views' }
 GtAcpToolCall >> gtDetailsFor: aView [
 	<gtView>

@@ -208,8 +208,15 @@ GtAcpShellElement >> sendMessage [
 				self updateStatus ]) ]
 		onError: [ :err |
 			self enqueueTask: (BlTaskAction new action: [ 
+				| errorText |
 				cancelButton visibility: BlVisibility gone.
-				statusLabel text: ('Error: ', err printString) ]) ]
+				errorText := err ifNil: [ 'Connection lost' ]
+					ifNotNil: [
+						(err isKindOf: Dictionary)
+							ifTrue: [ (err at: 'error' ifAbsent: [ err ]) printString ]
+							ifFalse: [ err printString ] ].
+				statusLabel text: ('Error: ', errorText).
+				self updateMessages ]) ]
 ]
 
 { #category : 'accessing' }
@@ -244,9 +251,12 @@ GtAcpShellElement >> subscribeToSession [
 
 { #category : 'updating' }
 GtAcpShellElement >> updateMessages [
-	listElement items: session messages.
-	session messages ifNotEmpty: [ 
-		listElement scrollToItem: session messages last ]
+	| msgs |
+	msgs := session messages.
+	listElement items size = msgs size
+		ifFalse: [
+			listElement items: msgs.
+			msgs ifNotEmpty: [ listElement scrollToItem: msgs last ] ]
 ]
 
 { #category : 'updating' }

@@ -109,7 +109,7 @@ GtAcpClientRegistry >> gtClientsTreeFor: aView [
 						ifTrue: [ BlElement new size: 8@8; geometry: BlCircleGeometry new; background: Color green ]
 						ifFalse: [ BlElement new size: 8@8; geometry: BlCircleGeometry new; background: Color lightGray ] ]
 					ifFalse: [ BlElement new size: 0@0 ] ]
-			width: 45;
+			width: 30;
 		column: 'Name'
 			text: [ :item |
 				(item isKindOf: GtAcpClient)
@@ -138,17 +138,18 @@ GtAcpClientRegistry >> gtClientsTreeFor: aView [
 			stencil: [ :item |
 				((item isKindOf: GtAcpClient) and: [ item isConnected ])
 					ifTrue: [
-						| button |
-						button := BrButton new beTinySize
+						BrButton new beTinySize
 							aptitude: BrGlamorousButtonWithIconAptitude
-								+ (BrGlamorousWithDropdownAptitude new
-									stencil: [ 
+								+ (BrGlamorousWithExplicitDropdownAptitude
+									handle: [ BrButton new
+										aptitude: BrGlamorousButtonRectangularAptitude + BrGlamorousButtonIconAptitude;
+										icon: BrGlamorousVectorIcons add ]
+									content: [
 										BrGlamorousSimpleContextMenuContent new
 											items: (self cwdMenuItemsForNewSessionOn: item);
 											yourself ]);
 							icon: BrGlamorousVectorIcons add;
-							label: 'New session on this client'.
-						button ]
+							label: 'New session on this client' ]
 					ifFalse: [ BlElement new size: 0@0 ] ]
 			width: 40;
 		send: [ :item | item ];

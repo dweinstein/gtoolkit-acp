@@ -22,43 +22,30 @@ GtAcpToolCallElement >> buildDetailContent [
 	
 	"Input parameters"
 	(toolCall rawInput notNil and: [ toolCall rawInput notEmpty ]) ifTrue: [
-		| inputPane |
-		inputPane := BrVerticalPane new hMatchParent; vFitContent.
-		toolCall rawInput keysAndValuesDo: [ :key :value |
-			| line valueText |
-			valueText := value asString.
-			valueText size > 300 ifTrue: [ valueText := (valueText first: 300), '...' ].
-			line := BrLabel new
-				aptitude: (BrGlamorousLabelAptitude new fontSize: 11; foreground: Color darkGray);
-				hMatchParent; vFitContent;
-				text: (key asString, ': ', valueText) ].
 		toolCall rawInput keysAndValuesDo: [ :key :value |
 			| valueText |
 			valueText := value asString.
 			valueText size > 300 ifTrue: [ valueText := (valueText first: 300), '...' ].
-			inputPane addChild: (BrLabel new
+			detailContainer addChild: (BrLabel new
 				aptitude: (BrGlamorousLabelAptitude new fontSize: 11; foreground: Color darkGray);
 				hMatchParent; vFitContent;
-				text: (key asString, ': ', valueText)) ].
-		detailContainer addChild: inputPane ].
+				text: (key asString, ': ', valueText)) ] ].
 	
 	"Output / response"
 	toolCall rawOutput ifNotNil: [ :output |
-		| outputText outputLabel sep |
+		| outputText |
 		outputText := output asString.
 		outputText size > 500 ifTrue: [ outputText := (outputText first: 500), '...' ].
-		sep := BrLabel new
+		detailContainer addChild: (BrLabel new
 			aptitude: (BrGlamorousLabelAptitude new fontSize: 10; foreground: Color gray);
-			text: '───'.
-		outputLabel := BrLabel new
+			text: '---').
+		detailContainer addChild: (BrLabel new
 			aptitude: (BrGlamorousLabelAptitude new fontSize: 11; 
 				foreground: (toolCall status = 'failed' 
 					ifTrue: [ Color red darker ] 
 					ifFalse: [ Color darkGray ]));
 			hMatchParent; vFitContent;
-			text: outputText.
-		detailContainer addChild: sep.
-		detailContainer addChild: outputLabel ].
+			text: outputText) ].
 	
 	"Click to inspect in detail"
 	detailContainer addChild: (BrLabel new

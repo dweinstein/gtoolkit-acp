@@ -8,7 +8,9 @@ Class {
 { #category : 'baseline' }
 BaselineOfGtoolkitAcp >> baseline: spec [
 	<baseline>
-		^ spec for: #common do: [
-			spec package: 'GToolkit-ACP'
-		]
+	^ spec
+		for: #common
+		do: [ spec package: 'GToolkit-ACP'.
+			spec package: 'GToolkit-ACP-UI'.
+			spec package: 'GToolkit-ACP-Examples' ]
 ]

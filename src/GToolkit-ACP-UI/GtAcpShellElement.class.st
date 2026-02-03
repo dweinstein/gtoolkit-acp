@@ -14,8 +14,8 @@ Class {
 		'subscriber',
 		'lastMessageCount'
 	],
-	#category : 'Gt4Acp-UI',
-	#package : 'Gt4Acp-UI'
+	#category : 'GToolkit-ACP-UI',
+	#package : 'GToolkit-ACP-UI'
 }
 
 { #category : 'instance creation' }

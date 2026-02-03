@@ -3,8 +3,7 @@ Class {
 	#superclass : 'Object',
 	#instVars : [
 		'role',
-		'contentBlocks',
-		'toolCalls',
+		'contentItems',
 		'isComplete',
 		'announcer'
 	],
@@ -27,15 +26,15 @@ GtAcpMessage class >> user: aString [
 		yourself
 ]
 
-{ #category : 'building' }
+{ #category : 'updating' }
 GtAcpMessage >> addContentBlock: aBlock [
-	contentBlocks add: aBlock.
+	contentItems add: aBlock.
 	announcer announce: GtAcpMessageUpdated new
 ]
 
-{ #category : 'building' }
+{ #category : 'updating' }
 GtAcpMessage >> addToolCall: aToolCall [
-	toolCalls add: aToolCall.
+	contentItems add: aToolCall.
 	announcer announce: GtAcpMessageUpdated new
 ]
 
@@ -44,36 +43,41 @@ GtAcpMessage >> announcer [
 	^ announcer
 ]
 
-{ #category : 'building' }
+{ #category : 'updating' }
 GtAcpMessage >> appendText: aString [
-	| lastBlock |
-	lastBlock := contentBlocks ifNotEmpty: [ contentBlocks last ] ifEmpty: [ nil ].
-	(lastBlock notNil and: [ lastBlock isKindOf: GtAcpTextBlock ])
-		ifTrue: [ lastBlock appendText: aString ]
-		ifFalse: [ contentBlocks add: (GtAcpTextBlock new text: aString; yourself) ].
+	| lastItem |
+	lastItem := contentItems ifNotEmpty: [ contentItems last ] ifEmpty: [ nil ].
+	(lastItem notNil and: [ lastItem isKindOf: GtAcpTextBlock ])
+		ifTrue: [ lastItem appendText: aString ]
+		ifFalse: [ contentItems add: (GtAcpTextBlock new text: aString; yourself) ].
 	announcer announce: GtAcpMessageUpdated new
 ]
 
 { #category : 'accessing' }
 GtAcpMessage >> contentBlocks [
-	^ contentBlocks
+	^ contentItems reject: [ :item | item isKindOf: GtAcpToolCall ]
 ]
 
-{ #category : 'printing' }
+{ #category : 'accessing' }
+GtAcpMessage >> contentItems [
+	^ contentItems
+]
+
+{ #category : 'accessing' }
 GtAcpMessage >> fullText [
 	^ String streamContents: [ :stream |
-		contentBlocks
-			select: [ :block | block isKindOf: GtAcpTextBlock ]
+		contentItems
+			select: [ :item | item isKindOf: GtAcpTextBlock ]
 			thenDo: [ :block | stream nextPutAll: block text; cr ] ]
 ]
 
-{ #category : 'views' }
+{ #category : 'gt - views' }
 GtAcpMessage >> gtContentFor: aView [
 	<gtView>
 	^ aView columnedList
 		title: 'Content';
 		priority: 10;
-		items: [ contentBlocks, toolCalls ];
+		items: [ contentItems ];
 		column: 'Type' text: [ :item |
 			(item isKindOf: GtAcpTextBlock)
 				ifTrue: [ 'Text' ]
@@ -116,8 +120,7 @@ GtAcpMessage >> hasToolCalls [
 GtAcpMessage >> initialize [
 	super initialize.
 	role := 'user'.
-	contentBlocks := OrderedCollection new.
-	toolCalls := OrderedCollection new.
+	contentItems := OrderedCollection new.
 	isComplete := false.
 	announcer := Announcer new
 ]
@@ -186,5 +189,5 @@ GtAcpMessage >> toolCallById: anId [
 
 { #category : 'accessing' }
 GtAcpMessage >> toolCalls [
-	^ toolCalls
+	^ contentItems select: [ :item | item isKindOf: GtAcpToolCall ]
 ]

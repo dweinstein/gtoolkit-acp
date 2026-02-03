@@ -275,6 +275,18 @@ GtAcpSession >> gtShellFor: aView [
 			GtAcpShellElement on: client session: self ]
 ]
 
+{ #category : 'gt - views' }
+GtAcpSession >> gtToolCallsFor: aView [
+	<gtView>
+	^ aView columnedList
+		title: 'Tool calls';
+		priority: 15;
+		items: [ messages flatCollect: [ :msg | msg toolCalls ] ];
+		column: 'Tool' text: [ :tc | tc title ifNil: [ 'unknown' ] ] width: 150;
+		column: 'Status' text: [ :tc | tc status ifNil: [ '' ] ] width: 80;
+		column: 'Input' text: [ :tc | tc inputSummary ifNil: [ '' ] ]
+]
+
 { #category : 'initialization' }
 GtAcpSession >> initialize [
 	super initialize.

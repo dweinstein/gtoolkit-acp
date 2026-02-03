@@ -197,7 +197,6 @@ GtAcpShellElement >> sendMessage [
 	text ifEmpty: [ ^ self ].
 	inputElement text: '' asRopedText.
 	cancelButton visibility: BlVisibility visible.
-	self updateMessages.
 	client 
 		prompt: text 
 		inSession: session 
@@ -249,14 +248,12 @@ GtAcpShellElement >> subscribeToSession [
 		to: self
 ]
 
-{ #category : 'updating' }
+{ #category : 'private' }
 GtAcpShellElement >> updateMessages [
 	| msgs |
 	msgs := session messages.
-	listElement items size = msgs size
-		ifFalse: [
-			listElement items: msgs.
-			msgs ifNotEmpty: [ listElement scrollToItem: msgs last ] ]
+	listElement items: msgs.
+	msgs ifNotEmpty: [ listElement scrollToItem: msgs last ]
 ]
 
 { #category : 'updating' }

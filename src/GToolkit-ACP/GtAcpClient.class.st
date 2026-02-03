@@ -241,9 +241,10 @@ GtAcpClient >> printOn: aStream [
 		nextPut: $)
 ]
 
-{ #category : 'session management' }
+{ #category : 'api' }
 GtAcpClient >> prompt: aString inSession: aSession do: aBlock onError: anErrorBlock [
 	aSession messages add: (GtAcpMessage user: aString).
+	aSession announcer announce: GtAcpSessionUpdated new.
 	transport
 		sendRequest: 'session/prompt'
 		params: (Dictionary new

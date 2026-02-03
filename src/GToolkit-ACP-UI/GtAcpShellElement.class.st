@@ -11,10 +11,11 @@ Class {
 		'modeButton',
 		'statusBar',
 		'permissionContainer',
-		'subscriber'
+		'subscriber',
+		'lastMessageCount'
 	],
-	#category : 'GToolkit-ACP-UI',
-	#package : 'GToolkit-ACP-UI'
+	#category : 'Gt4Acp-UI',
+	#package : 'Gt4Acp-UI'
 }
 
 { #category : 'instance creation' }

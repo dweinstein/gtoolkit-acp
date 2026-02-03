@@ -15,7 +15,8 @@ Class {
 		'announcer',
 		'client',
 		'permissionHistory',
-		'alwaysAllowedTools'
+		'alwaysAllowedTools',
+		'toolCallsById'
 	],
 	#category : 'GToolkit-ACP',
 	#package : 'GToolkit-ACP'
@@ -297,6 +298,7 @@ GtAcpSession >> initialize [
 	availableCommands := OrderedCollection new.
 	availableModes := #().
 	availableModels := #().
+	toolCallsById := Dictionary new.
 	announcer := Announcer new
 ]
 
@@ -375,28 +377,29 @@ GtAcpSession >> processPlan: aDictionary [
 
 { #category : 'processing' }
 GtAcpSession >> processToolCall: aDictionary [
-	| message toolCall toolCallId existing |
+	| message toolCall toolCallId |
 	message := self currentAssistantMessage.
 	toolCallId := aDictionary at: 'toolCallId' ifAbsent: [ nil ].
-	"Check if this is an update to an existing tool call"
-	(toolCallId notNil and: [ 
-		existing := message toolCalls 
-			detect: [ :tc | tc toolCallId = toolCallId ] 
-			ifNone: [ nil ].
-		existing notNil ])
-		ifTrue: [ existing applyUpdate: aDictionary ]
-		ifFalse: [ 
-			toolCall := GtAcpToolCall fromDictionary: aDictionary.
-			message addToolCall: toolCall ].
+	
+	"Check if this tool call already exists in our registry"
+	toolCallId ifNotNil: [
+		(self toolCallsById includesKey: toolCallId) ifTrue: [
+			(self toolCallsById at: toolCallId) applyUpdate: aDictionary.
+			announcer announce: GtAcpSessionUpdated new.
+			^ self ] ].
+	
+	"New tool call - create and register it"
+	toolCall := GtAcpToolCall fromDictionary: aDictionary.
+	toolCallId ifNotNil: [ self toolCallsById at: toolCallId put: toolCall ].
+	message addToolCall: toolCall.
 	announcer announce: GtAcpSessionUpdated new
 ]
 
-{ #category : 'updating' }
+{ #category : 'processing' }
 GtAcpSession >> processToolCallUpdate: aDictionary [
-	| message toolCall toolCallId |
-	message := self currentAssistantMessage.
+	| toolCall toolCallId |
 	toolCallId := aDictionary at: 'toolCallId'.
-	toolCall := message toolCalls detect: [ :tc | tc toolCallId = toolCallId ] ifNone: [ ^ self ].
+	toolCall := self toolCallsById at: toolCallId ifAbsent: [ ^ self ].
 	toolCall applyUpdate: aDictionary.
 	announcer announce: GtAcpSessionUpdated new
 ]
@@ -441,4 +444,9 @@ GtAcpSession >> sessionId [
 { #category : 'accessing' }
 GtAcpSession >> sessionId: aString [
 	sessionId := aString
+]
+
+{ #category : 'accessing' }
+GtAcpSession >> toolCallsById [
+	^ toolCallsById ifNil: [ toolCallsById := Dictionary new ]
 ]

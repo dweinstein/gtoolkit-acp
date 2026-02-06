@@ -94,25 +94,30 @@ GtAcpClient >> createdAt [
 	^ createdAt ifNil: [ DateAndTime epoch ]
 ]
 
-{ #category : 'connecting' }
+{ #category : 'lifecycle' }
 GtAcpClient >> disconnect [
-	transport ifNotNil: [ transport terminate ].
+	transport ifNotNil: [ 
+		transport terminate.
+		transport := nil ].
+	sessions valuesDo: [ :s | s client: nil ].
+	sessions := Dictionary new.
 	announcer announce: GtAcpClientUpdated new
 ]
 
-{ #category : 'actions' }
+{ #category : 'gt - extensions' }
 GtAcpClient >> gtDisconnectActionFor: anAction [
 	<gtAction>
 	self isConnected ifFalse: [ ^ anAction noAction ].
 	^ anAction button
 		tooltip: 'Disconnect';
-		icon: BrGlamorousVectorIcons cancel;
+		icon: BrGlamorousVectorIcons shutdown;
 		action: [ :aButton | self disconnect ]
 ]
 
-{ #category : 'actions' }
+{ #category : 'gt - extensions' }
 GtAcpClient >> gtNewSessionActionFor: anAction [
 	<gtAction>
+	self isConnected ifFalse: [ ^ anAction noAction ].
 	^ anAction dropdown
 		tooltip: 'New session';
 		icon: BrGlamorousVectorIcons add;
@@ -136,12 +141,13 @@ GtAcpClient >> gtNewSessionActionFor: anAction [
 				yourself ]
 ]
 
-{ #category : 'actions' }
+{ #category : 'gt - extensions' }
 GtAcpClient >> gtRemoveActionFor: anAction [
 	<gtAction>
+	self isConnected ifTrue: [ ^ anAction noAction ].
 	^ anAction button
 		tooltip: 'Remove from registry';
-		icon: BrGlamorousVectorIcons close;
+		icon: BrGlamorousVectorIcons trash;
 		action: [ :aButton | GtAcpClientRegistry uniqueInstance unregister: self ]
 ]
 

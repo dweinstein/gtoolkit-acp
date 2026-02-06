@@ -113,9 +113,11 @@ GtAcpTransport >> gtTrafficFor: aView [
 
 { #category : 'private' }
 GtAcpTransport >> handleProcessExit [
+	| exitBlock |
+	exitBlock := onExitBlock.
 	errorHandlers do: [ :anErrorHandler | anErrorHandler cull: 'Process exited' ].
 	self terminate.
-	onExitBlock ifNotNil: [ onExitBlock value ]
+	exitBlock ifNotNil: [ exitBlock value ]
 ]
 
 { #category : 'private' }
@@ -336,7 +338,9 @@ GtAcpTransport >> terminate [
 			stdin := nil ].
 	resultHandlers := Dictionary new.
 	errorHandlers := Dictionary new.
-	pendingInput := ''
+	methodHandlers := Dictionary new.
+	pendingInput := ''.
+	onExitBlock := nil
 ]
 
 { #category : 'private' }

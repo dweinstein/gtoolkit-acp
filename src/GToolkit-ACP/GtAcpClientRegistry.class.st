@@ -81,12 +81,12 @@ GtAcpClientRegistry >> cwdMenuItemsForNewSessionOn: aClient [
 	^ items
 ]
 
-{ #category : 'actions' }
+{ #category : 'gt - extensions' }
 GtAcpClientRegistry >> gtCleanupActionFor: anAction [
 	<gtAction>
 	^ anAction button
 		tooltip: 'Remove disconnected clients';
-		icon: BrGlamorousVectorIcons remove;
+		icon: BrGlamorousVectorIcons bin;
 		action: [ :aButton | self cleanup ]
 ]
 
@@ -157,12 +157,12 @@ GtAcpClientRegistry >> gtClientsTreeFor: aView [
 		actionUpdateButton
 ]
 
-{ #category : 'actions' }
+{ #category : 'gt - extensions' }
 GtAcpClientRegistry >> gtQuickLaunchActionFor: anAction [
 	<gtAction>
 	^ anAction dropdown
-		tooltip: 'New Claude Code session';
-		icon: BrGlamorousVectorIcons add;
+		tooltip: 'Launch new Claude Code';
+		icon: BrGlamorousVectorIcons play;
 		content: [ :aButton |
 			BrGlamorousSimpleContextMenuContent new
 				items: (self cwdMenuItemsForLaunchFrom: aButton);
@@ -216,10 +216,11 @@ GtAcpClientRegistry >> register: aClient [
 	announcer announce: GtAcpClientRegistryUpdated new
 ]
 
-{ #category : 'registration' }
+{ #category : 'accessing' }
 GtAcpClientRegistry >> unregister: aClient [
-	"Remove a client from the registry"
+	"Remove a client from the registry, disconnecting it if needed"
 	clients remove: aClient ifAbsent: [ ^ self ].
 	aClient announcer unsubscribe: self.
+	aClient isConnected ifTrue: [ aClient disconnect ].
 	announcer announce: GtAcpClientRegistryUpdated new
 ]

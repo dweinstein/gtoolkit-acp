@@ -5,9 +5,7 @@ Class {
 		'message',
 		'contentContainer',
 		'roleElement',
-		'thinkingContainer',
-		'thinkingHeader',
-		'thinkingEditor',
+		'thinkingElement',
 		'subscriber'
 	],
 	#category : 'GToolkit-ACP-UI',
@@ -25,10 +23,10 @@ GtAcpMessageElement >> initialize [
 	self padding: (BlInsets all: 8).
 	self margin: (BlInsets top: 2 bottom: 2).
 	self initializeRoleElement.
-	self initializeThinkingContainer.
+	self initializeThinkingElement.
 	self initializeContentContainer.
 	self addChild: roleElement as: #role.
-	self addChild: thinkingContainer as: #thinking.
+	self addChild: thinkingElement as: #thinking.
 	self addChild: contentContainer as: #content
 ]
 
@@ -53,33 +51,9 @@ GtAcpMessageElement >> initializeRoleElement [
 ]
 
 { #category : 'initialization' }
-GtAcpMessageElement >> initializeThinkingContainer [
-	thinkingHeader := BrLabel new
-		aptitude: (BrGlamorousLabelAptitude new fontSize: 11; foreground: Color gray);
-		text: '> Thinking...';
-		hMatchParent;
-		vFitContent;
-		padding: (BlInsets top: 2 bottom: 2).
-	thinkingHeader when: BlClickEvent do: [ :e |
-		e consumed: true.
-		self toggleThinking ].
-	thinkingEditor := BrEditor new
-		hMatchParent;
-		vFitContentLimited;
-		aptitude: (BrGlamorousRegularEditorAptitude new fontSize: 11; foreground: (Color gray alpha: 0.8));
-		beReadOnlyWithSelection;
-		visibility: BlVisibility gone.
-	thinkingContainer := BlElement new
-		layout: BlLinearLayout vertical;
-		constraintsDo: [ :c |
-			c horizontal matchParent.
-			c vertical fitContent ];
-		background: (Color veryLightGray alpha: 0.15);
-		padding: (BlInsets all: 4);
-		margin: (BlInsets bottom: 4);
-		visibility: BlVisibility gone.
-	thinkingContainer addChild: thinkingHeader.
-	thinkingContainer addChild: thinkingEditor
+GtAcpMessageElement >> initializeThinkingElement [
+	thinkingElement := GtAcpThinkingElement new
+		visibility: BlVisibility gone
 ]
 
 { #category : 'accessing' }
@@ -116,17 +90,6 @@ GtAcpMessageElement >> onMessageUpdated: anAnnouncement [
 	self enqueueTask: (BlTaskAction new action: [ 
 		self updateContent.
 		self updateThinking ])
-]
-
-{ #category : 'actions' }
-GtAcpMessageElement >> toggleThinking [
-	thinkingEditor visibility = BlVisibility gone
-		ifTrue: [
-			thinkingEditor visibility: BlVisibility visible.
-			thinkingHeader text: ('v Thinking (' , message thinking size printString , ' chars)') ]
-		ifFalse: [
-			thinkingEditor visibility: BlVisibility gone.
-			thinkingHeader text: '> Thinking...' ]
 ]
 
 { #category : 'updating' }
@@ -176,11 +139,11 @@ GtAcpMessageElement >> updateRole [
 
 { #category : 'updating' }
 GtAcpMessageElement >> updateThinking [
-	thinkingContainer ifNil: [ ^ self ].
+	thinkingElement ifNil: [ ^ self ].
 	message hasThinking
 		ifTrue: [
-			thinkingContainer visibility: BlVisibility visible.
-			thinkingEditor text: message thinking asRopedText ]
+			thinkingElement message: message.
+			thinkingElement visibility: BlVisibility visible ]
 		ifFalse: [
-			thinkingContainer visibility: BlVisibility gone ]
+			thinkingElement visibility: BlVisibility gone ]
 ]

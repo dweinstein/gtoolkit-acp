@@ -5,7 +5,8 @@ Class {
 		'role',
 		'contentItems',
 		'isComplete',
-		'announcer'
+		'announcer',
+		'thinking'
 	],
 	#category : 'GToolkit-ACP',
 	#package : 'GToolkit-ACP'
@@ -50,6 +51,12 @@ GtAcpMessage >> appendText: aString [
 	(lastItem notNil and: [ lastItem isKindOf: GtAcpTextBlock ])
 		ifTrue: [ lastItem appendText: aString ]
 		ifFalse: [ contentItems add: (GtAcpTextBlock new text: aString; yourself) ].
+	announcer announce: GtAcpMessageUpdated new
+]
+
+{ #category : 'updating' }
+GtAcpMessage >> appendThinking: aString [
+	thinking := self thinking , aString.
 	announcer announce: GtAcpMessageUpdated new
 ]
 
@@ -109,6 +116,21 @@ GtAcpMessage >> gtTextFor: aView [
 		title: 'Text';
 		priority: 20;
 		text: [ self fullText ]
+]
+
+{ #category : 'views' }
+GtAcpMessage >> gtThinkingFor: aView [
+	<gtView>
+	self hasThinking ifFalse: [ ^ aView empty ].
+	^ aView textEditor
+		title: 'Thinking';
+		priority: 15;
+		text: [ self thinking ]
+]
+
+{ #category : 'testing' }
+GtAcpMessage >> hasThinking [
+	^ thinking notNil and: [ thinking notEmpty ]
 ]
 
 { #category : 'testing' }
@@ -180,6 +202,11 @@ GtAcpMessage >> role [
 { #category : 'accessing' }
 GtAcpMessage >> role: aString [
 	role := aString
+]
+
+{ #category : 'accessing' }
+GtAcpMessage >> thinking [
+	^ thinking ifNil: [ '' ]
 ]
 
 { #category : 'building' }

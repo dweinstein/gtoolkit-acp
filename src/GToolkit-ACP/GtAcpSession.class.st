@@ -355,6 +355,16 @@ GtAcpSession >> processAgentMessageChunk: aDictionary [
 	announcer announce: GtAcpSessionUpdated new
 ]
 
+{ #category : 'processing' }
+GtAcpSession >> processAgentThoughtChunk: aDictionary [
+	| message contentBlock |
+	message := self currentAssistantMessage.
+	contentBlock := aDictionary at: 'content'.
+	(contentBlock at: 'type') = 'text'
+		ifTrue: [ message appendThinking: (contentBlock at: 'text') ].
+	announcer announce: GtAcpSessionUpdated new
+]
+
 { #category : 'updating' }
 GtAcpSession >> processAvailableCommands: aDictionary [
 	availableCommands := aDictionary at: 'availableCommands' ifAbsent: [ #() ].
@@ -404,14 +414,14 @@ GtAcpSession >> processToolCallUpdate: aDictionary [
 	announcer announce: GtAcpSessionUpdated new
 ]
 
-{ #category : 'updating' }
+{ #category : 'processing' }
 GtAcpSession >> processUpdate: aDictionary [
 	| updateType |
 	updateType := aDictionary at: 'sessionUpdate'.
 	
 	updateType = 'agent_message_chunk' ifTrue: [ ^ self processAgentMessageChunk: aDictionary ].
 	updateType = 'user_message_chunk' ifTrue: [ ^ self processUserMessageChunk: aDictionary ].
-	updateType = 'agent_thought_chunk' ifTrue: [ ^ self ]. "ignore for now"
+	updateType = 'agent_thought_chunk' ifTrue: [ ^ self processAgentThoughtChunk: aDictionary ].
 	updateType = 'tool_call' ifTrue: [ ^ self processToolCall: aDictionary ].
 	updateType = 'tool_call_update' ifTrue: [ ^ self processToolCallUpdate: aDictionary ].
 	updateType = 'plan' ifTrue: [ ^ self processPlan: aDictionary ].

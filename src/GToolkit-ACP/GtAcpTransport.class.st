@@ -4,6 +4,7 @@ Class {
 	#instVars : [
 		'program',
 		'arguments',
+		'environment',
 		'process',
 		'stdout',
 		'stdin',
@@ -45,6 +46,16 @@ GtAcpTransport >> arguments [
 { #category : 'accessing' }
 GtAcpTransport >> arguments: anArray [
 	arguments := anArray
+]
+
+{ #category : 'accessing' }
+GtAcpTransport >> environment [
+	^ environment ifNil: [ environment := Dictionary new ]
+]
+
+{ #category : 'accessing' }
+GtAcpTransport >> environmentAt: key put: value [
+	environment at: key put: value
 ]
 
 { #category : 'private' }
@@ -132,6 +143,7 @@ GtAcpTransport >> initialize [
 	methodHandlers := Dictionary new.
 	pendingInput := ''.
 	arguments := #().
+	environment := Dictionary new.
 	messageLog := OrderedCollection new
 ]
 
@@ -277,12 +289,15 @@ GtAcpTransport >> sendRequest: aMethod params: aParams do: aBlock onError: error
 
 { #category : 'lifecycle' }
 GtAcpTransport >> start [
-	process := [ (GtExternalProcessBuilder new: program)
+	process := [ | builder |
+		builder := (GtExternalProcessBuilder new: program)
 			args: arguments;
 			pipeStdin;
 			pipeStdout;
-			pipeStderr;
-			spawn ]
+			pipeStderr.
+		self environment keysAndValuesDo: [ :key :value |
+			builder env: key value: value ].
+		builder spawn ]
 			on: GtExternalProcessFailedToStart
 			do: [ :exception | exception child ].
 	stdout := process asynchronousStdout.

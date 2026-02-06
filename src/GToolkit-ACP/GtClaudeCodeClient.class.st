@@ -20,6 +20,11 @@ GtClaudeCodeClient class >> defaultCwd: aString [
 	defaultCwd := aString
 ]
 
+{ #category : 'configuration' }
+GtClaudeCodeClient class >> defaultEnvironment [
+	^ { 'MAX_THINKING_TOKENS' -> '10000' } asDictionary
+]
+
 { #category : 'launching' }
 GtClaudeCodeClient class >> launch [
 	"Create a new Claude Code client, connect, initialize, and open a session in the default CWD"
@@ -43,7 +48,7 @@ GtClaudeCodeClient class >> launchIn: aCwdString [
 
 { #category : 'configuration' }
 GtClaudeCodeClient class >> programArgs [
-	^ programArgs ifNil: [ #('/Users/user/personal/acp/claude-code-acp/dist/index.js') ]
+	^ programArgs ifNil: [ #('/Users/user/personal/gt/acp/claude-code-acp/dist/index.js') ]
 ]
 
 { #category : 'configuration' }
@@ -63,8 +68,8 @@ GtClaudeCodeClient class >> programPath: aString [
 
 { #category : 'connecting' }
 GtClaudeCodeClient >> connect [
-	"Connect using the class-side configured program path and args"
-	self connectTo: self class programPath args: self class programArgs
+	"Connect using the class-side configured program path, args, and environment"
+	self connectTo: self class programPath args: self class programArgs environment: self class defaultEnvironment
 ]
 
 { #category : 'printing' }

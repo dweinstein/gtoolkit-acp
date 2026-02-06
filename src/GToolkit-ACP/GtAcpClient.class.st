@@ -79,6 +79,16 @@ GtAcpClient >> connectTo: programPath args: anArray [
 	transport start
 ]
 
+{ #category : 'connecting' }
+GtAcpClient >> connectTo: programPath args: anArray environment: envDictionary [
+	transport := GtAcpTransport on: programPath args: anArray.
+	envDictionary keysAndValuesDo: [ :key :value |
+		transport environmentAt: key put: value ].
+	transport onExit: [ announcer announce: GtAcpClientUpdated new ].
+	self registerHandlers.
+	transport start
+]
+
 { #category : 'accessing' }
 GtAcpClient >> createdAt [
 	^ createdAt ifNil: [ DateAndTime epoch ]

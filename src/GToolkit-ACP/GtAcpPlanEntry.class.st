@@ -14,7 +14,7 @@ Class {
 GtAcpPlanEntry class >> fromDictionary: aDictionary [
 	^ self new
 		content: (aDictionary at: 'content' ifAbsent: [ '' ]);
-		priority: (aDictionary at: 'priority' ifAbsent: [ 0 ]);
+		priority: (aDictionary at: 'priority' ifAbsent: [ 'medium' ]);
 		status: (aDictionary at: 'status' ifAbsent: [ 'pending' ]);
 		yourself
 ]

@@ -163,14 +163,16 @@ GtAcpSession >> gtCancelActionFor: anAction [
 		action: [ :aButton | client cancelSession: self ]
 ]
 
-{ #category : 'gt views' }
+{ #category : 'gt - extensions' }
 GtAcpSession >> gtMessagesFor: aView [
 	<gtView>
 	^ aView list
 		title: 'Messages';
 		priority: 10;
 		items: [ messages ];
-		itemText: [ :msg | msg role asString, ': ', msg preview ]
+		itemText: [ :msg | msg role asString, ': ', msg preview ];
+		updateWhen: GtAcpSessionUpdated in: [ announcer ];
+		actionUpdateButton
 ]
 
 { #category : 'gt-views' }
@@ -257,13 +259,30 @@ GtAcpSession >> gtPermissionsFor: aView [
 						ifFalse: [ '' ] ] ] width: 180
 ]
 
-{ #category : 'gt views' }
+{ #category : 'gt - extensions' }
 GtAcpSession >> gtPlanFor: aView [
 	<gtView>
-	^ aView list
+	^ aView columnedList
 		title: 'Plan';
 		priority: 20;
-		items: [ plan ]
+		items: [ plan ];
+		column: 'Status' 
+			icon: [ :entry |
+				| color |
+				color := entry isCompleted
+					ifTrue: [ Color green ]
+					ifFalse: [ entry isInProgress
+						ifTrue: [ Color orange ]
+						ifFalse: [ Color lightGray ] ].
+				BlElement new
+					size: 8@8;
+					geometry: BlCircleGeometry new;
+					background: color ]
+			width: 40;
+		column: 'Task' text: [ :entry | entry content ] weight: 1;
+		column: 'Priority' text: [ :entry | entry priority ] width: 70;
+		updateWhen: GtAcpSessionUpdated in: [ announcer ];
+		actionUpdateButton
 ]
 
 { #category : 'gt - views' }
@@ -276,7 +295,7 @@ GtAcpSession >> gtShellFor: aView [
 			GtAcpShellElement on: client session: self ]
 ]
 
-{ #category : 'gt - views' }
+{ #category : 'gt - extensions' }
 GtAcpSession >> gtToolCallsFor: aView [
 	<gtView>
 	^ aView columnedList
@@ -285,7 +304,9 @@ GtAcpSession >> gtToolCallsFor: aView [
 		items: [ messages flatCollect: [ :msg | msg toolCalls ] ];
 		column: 'Tool' text: [ :tc | tc title ifNil: [ 'unknown' ] ] width: 150;
 		column: 'Status' text: [ :tc | tc status ifNil: [ '' ] ] width: 80;
-		column: 'Input' text: [ :tc | tc inputSummary ifNil: [ '' ] ]
+		column: 'Input' text: [ :tc | tc inputSummary ifNil: [ '' ] ];
+		updateWhen: GtAcpSessionUpdated in: [ announcer ];
+		actionUpdateButton
 ]
 
 { #category : 'initialization' }

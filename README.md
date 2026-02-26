@@ -4,6 +4,8 @@ A [Glamorous Toolkit](https://gtoolkit.com/) client for the [Agent Client Protoc
 
 This package lets you launch Claude Code agent processes from within GT, send prompts, stream responses, manage sessions, handle tool-call permissions, and inspect every detail of the conversation through GT's inspector views.
 
+![GT inspector showing the ACP client registry, an interactive shell session, class browser, and package dependency graph](doc/screenshot.png)
+
 ## Features
 
 - **Multi-session management** -- launch one or more Claude Code processes, each with independent sessions in different working directories.

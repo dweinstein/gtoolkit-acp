@@ -30,7 +30,7 @@ Load via Metacello:
 ```smalltalk
 Metacello new
     baseline: 'GtoolkitAcp';
-    repository: 'github://dweinstein/gtoolkit-acp:main/src';
+    repository: 'github://dweinstein/gtoolkit-acp/src';
     load.
 ```
 

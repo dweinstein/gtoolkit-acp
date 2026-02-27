@@ -15,7 +15,7 @@ GtAcpHomeSection >> acpShellCard [
 		description: 'Browse and manage agent sessions';
 		priority: 10;
 		stencil: [
-			| container titleLabel subtitleLabel |
+			| container titleLabel subtitleLabel nodePathElement jsPathElement inspectArea pathsArea |
 			titleLabel := BrLabel new
 				beLargeSize;
 				padding: (BlInsets bottom: 5);
@@ -24,8 +24,42 @@ GtAcpHomeSection >> acpShellCard [
 			subtitleLabel := BrLabel new
 				aptitude: (BrGlamorousLabelAptitude new foreground: Color gray; fontSize: 12);
 				text: 'Browse and manage agent sessions'.
+
+			nodePathElement := GtAcpFilePathElement new
+				hMatchParent;
+				label: 'Node:';
+				path: GtClaudeCodeClient programPath asFileReference;
+				onPathChanged: [ :aPathString |
+					GtClaudeCodeClient programPath: aPathString ].
+
+			jsPathElement := GtAcpFilePathElement new
+				hMatchParent;
+				label: 'ACP JS:';
+				path: GtClaudeCodeClient programArgs first asFileReference;
+				onPathChanged: [ :aPathString |
+					GtClaudeCodeClient programArgs: { aPathString } ].
+
+			inspectArea := BrVerticalPane new
+				hMatchParent;
+				vFitContent;
+				when: BlClickEvent do: [ :anEvent |
+					anEvent consumed: true.
+					inspectArea phlow spawnOrShowObject: GtAcpClientRegistry uniqueInstance ].
+			inspectArea addChild: titleLabel preventMeAndChildrenMouseEvents.
+			inspectArea addChild: subtitleLabel preventMeAndChildrenMouseEvents.
+
+			pathsArea := BrVerticalPane new
+				hMatchParent;
+				vFitContent;
+				cellSpacing: 4;
+				padding: (BlInsets top: 10);
+				when: BlClickEvent do: [ :e | e consumed: true ];
+				when: BlDoubleClickEvent do: [ :e | e consumed: true ];
+				addChild: nodePathElement;
+				addChild: jsPathElement.
+
 			container := BrVerticalPane new
-				exact: 250 @ 150;
+				exact: 400 @ 170;
 				background: Color white;
 				aptitude: BrShadowAptitude new beLarge
 					+ (BrGlamorousButtonExteriorAptitude new
@@ -36,12 +70,9 @@ GtAcpHomeSection >> acpShellCard [
 					top: self spaceGap
 					left: 2 * self spaceGap
 					bottom: 2 * self spaceGap
-					right: 2 * self spaceGap);
-				when: BlClickEvent do: [ :anEvent |
-					anEvent consumed: true.
-					container phlow spawnOrShowObject: GtAcpClientRegistry uniqueInstance ].
-			container addChild: titleLabel preventMeAndChildrenMouseEvents.
-			container addChild: subtitleLabel preventMeAndChildrenMouseEvents.
+					right: 2 * self spaceGap).
+			container addChild: inspectArea.
+			container addChild: pathsArea.
 			container ]
 ]
 

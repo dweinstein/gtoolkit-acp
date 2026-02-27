@@ -154,6 +154,11 @@ GtAcpTransport >> isRunning [
 	^ process notNil and: [ process isRunning ]
 ]
 
+{ #category : 'private' }
+GtAcpTransport >> maxMessageLogEntries [
+	^ 2000
+]
+
 { #category : 'accessing' }
 GtAcpTransport >> messageLog [
 	^ messageLog
@@ -207,30 +212,34 @@ GtAcpTransport >> processInput: aString [
 GtAcpTransport >> processMessage: aDictionary [
 	| id handler |
 	messageLog add: (GtAcpLogEntry received: aDictionary).
+	self trimMessageLog.
 	(aDictionary includesKey: 'result')
-		ifTrue: [ id := aDictionary at: 'id' ifAbsent: [ 0 ].
+		ifTrue: [
+			id := aDictionary at: 'id' ifAbsent: [ 0 ].
 			handler := resultHandlers at: id ifAbsent: [ nil ].
-			resultHandlers removeKey: id ifAbsent: [  ].
-			errorHandlers removeKey: id ifAbsent: [  ].
+			resultHandlers removeKey: id ifAbsent: [ ].
+			errorHandlers removeKey: id ifAbsent: [ ].
 			^ handler
 				ifNil: [ self handleUnknownResult: aDictionary ]
-				ifNotNil: [ [ handler cull: aDictionary ] fork ] ].
+				ifNotNil: [ handler cull: aDictionary ] ].
 	(aDictionary includesKey: 'error')
-		ifTrue: [ id := aDictionary at: 'id' ifAbsent: [ 0 ].
+		ifTrue: [
+			id := aDictionary at: 'id' ifAbsent: [ 0 ].
 			handler := errorHandlers at: id ifAbsent: [ nil ].
-			resultHandlers removeKey: id ifAbsent: [  ].
-			errorHandlers removeKey: id ifAbsent: [  ].
+			resultHandlers removeKey: id ifAbsent: [ ].
+			errorHandlers removeKey: id ifAbsent: [ ].
 			^ handler
 				ifNil: [ self handleUnknownError: aDictionary ]
-				ifNotNil: [ [ handler cull: aDictionary ] fork ] ].
+				ifNotNil: [ handler cull: aDictionary ] ].
 	(aDictionary includesKey: 'method')
-		ifTrue: [ | method params |
+		ifTrue: [
+			| method params |
 			method := aDictionary at: 'method'.
 			params := aDictionary at: 'params' ifAbsent: [ Dictionary new ].
 			handler := methodHandlers at: method ifAbsent: [ nil ].
 			^ handler
 				ifNil: [ self handleUnknownMethod: aDictionary ]
-				ifNotNil: [ [ handler cull: params cull: aDictionary ] fork ] ]
+				ifNotNil: [ handler cull: params cull: aDictionary ] ]
 ]
 
 { #category : 'accessing' }
@@ -344,10 +353,19 @@ GtAcpTransport >> terminate [
 ]
 
 { #category : 'private' }
+GtAcpTransport >> trimMessageLog [
+	| overflow |
+	overflow := messageLog size - self maxMessageLogEntries.
+	overflow > 0 ifTrue: [
+		1 to: overflow do: [ :i | messageLog removeFirst ] ]
+]
+
+{ #category : 'private' }
 GtAcpTransport >> writeMessage: aDictionary [
 	| jsonString |
 	jsonString := STONJSON toString: aDictionary.
 	messageLog add: (GtAcpLogEntry sent: aDictionary).
+	self trimMessageLog.
 	mutex critical: [
 		stdin
 			nextPutAll: jsonString;

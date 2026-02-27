@@ -56,7 +56,11 @@ GtAcpMessage >> appendText: aString [
 
 { #category : 'updating' }
 GtAcpMessage >> appendThinking: aString [
-	thinking := self thinking , aString.
+	| delta current |
+	delta := aString ifNil: [ '' ] ifNotNil: [ aString asString ].
+	delta isEmpty ifTrue: [ ^ self ].
+	current := thinking ifNil: [ '' ] ifNotNil: [ thinking asString ].
+	thinking := current , delta.
 	announcer announce: GtAcpMessageUpdated new
 ]
 
@@ -130,7 +134,7 @@ GtAcpMessage >> gtThinkingFor: aView [
 
 { #category : 'testing' }
 GtAcpMessage >> hasThinking [
-	^ thinking notNil and: [ thinking notEmpty ]
+	^ thinking notNil and: [ thinking size > 0 ]
 ]
 
 { #category : 'testing' }
@@ -206,7 +210,7 @@ GtAcpMessage >> role: aString [
 
 { #category : 'accessing' }
 GtAcpMessage >> thinking [
-	^ thinking ifNil: [ '' ]
+	^ thinking ifNil: [ '' ] ifNotNil: [ thinking asString ]
 ]
 
 { #category : 'building' }

@@ -18,9 +18,11 @@ GtAcpTextBlock class >> fromDictionary: aDictionary [
 
 { #category : 'accessing' }
 GtAcpTextBlock >> appendText: aString [
-	text := text
-		ifNil: [ aString ]
-		ifNotNil: [ text , aString ]
+	| delta current |
+	delta := aString ifNil: [ '' ] ifNotNil: [ aString asString ].
+	delta isEmpty ifTrue: [ ^ self ].
+	current := text ifNil: [ '' ] ifNotNil: [ text asString ].
+	text := current , delta
 ]
 
 { #category : 'gt views' }
@@ -29,25 +31,32 @@ GtAcpTextBlock >> gtTextFor: aView [
 	^ aView textEditor
 		title: 'Text';
 		priority: 10;
-		text: [ text ifNil: [ '' ] ]
+		text: [ self text ]
 ]
 
 { #category : 'printing' }
 GtAcpTextBlock >> printOn: aStream [
+	| display |
+	display := self text.
 	aStream nextPutAll: 'GtAcpTextBlock('.
-	text ifNotNil: [ 
-		aStream nextPutAll: (text size > 40 
-			ifTrue: [ (text first: 40) , '...' ]
-			ifFalse: [ text ]) ].
+	display ifNotNil: [
+		aStream nextPutAll: (display size > 40
+			ifTrue: [ (display first: 40) , '...' ]
+			ifFalse: [ display ]) ].
 	aStream nextPut: $)
 ]
 
 { #category : 'accessing' }
+GtAcpTextBlock >> ropedText [
+	^ self text asRopedText
+]
+
+{ #category : 'accessing' }
 GtAcpTextBlock >> text [
-	^ text
+	^ text ifNil: [ '' ] ifNotNil: [ text asString ]
 ]
 
 { #category : 'accessing' }
 GtAcpTextBlock >> text: aString [
-	text := aString
+	text := aString ifNil: [ '' ] ifNotNil: [ aString asString ]
 ]

@@ -42,6 +42,7 @@ GtAcpShellElement >> client [
 GtAcpShellElement >> client: aGtAcpClient session: aGtAcpSession [
 	client := aGtAcpClient.
 	session := aGtAcpSession.
+	lastMessageCount := -1.
 	self subscribeToSession.
 	self updateStatus.
 	self updateMessages
@@ -185,9 +186,16 @@ GtAcpShellElement >> onPermissionRequested: anAnnouncement [
 
 { #category : 'updating' }
 GtAcpShellElement >> onSessionUpdated: anAnnouncement [
-	self enqueueTask: (BlTaskAction new action: [ 
+	self enqueueTask: (BlTaskAction new action: [
+		| previousCount currentMode modeChanged |
+		previousCount := lastMessageCount ifNil: [ -1 ].
 		self updateMessages.
-		self updateStatus ])
+		currentMode := session
+			ifNil: [ 'Mode' ]
+			ifNotNil: [ session currentModeId ifNil: [ 'Mode' ] ].
+		modeChanged := modeButton label asString ~= currentMode.
+		(previousCount ~= lastMessageCount or: [ modeChanged ])
+			ifTrue: [ self updateStatus ] ])
 ]
 
 { #category : 'actions' }
@@ -251,18 +259,21 @@ GtAcpShellElement >> subscribeToSession [
 
 { #category : 'private' }
 GtAcpShellElement >> updateMessages [
-	| msgs |
+	| msgs messageCount |
 	msgs := session messages.
+	messageCount := msgs size.
+	(lastMessageCount = messageCount) ifTrue: [ ^ self ].
+	lastMessageCount := messageCount.
 	listElement items: msgs.
 	msgs ifNotEmpty: [ listElement scrollToItem: msgs last ]
 ]
 
 { #category : 'updating' }
 GtAcpShellElement >> updateStatus [
-	| text |
-	text := session 
+	| text currentText modes |
+	text := session
 		ifNil: [ 'Disconnected' ]
-		ifNotNil: [ 
+		ifNotNil: [
 			String streamContents: [ :s |
 				s nextPutAll: session cwd.
 				s nextPutAll: ' | '.
@@ -272,9 +283,9 @@ GtAcpShellElement >> updateStatus [
 					s nextPutAll: ' | '.
 					s print: session messages size.
 					s nextPutAll: ' msgs' ] ] ].
-	statusLabel text: text.
+	currentText := statusLabel text asString.
+	currentText = text ifFalse: [ statusLabel text: text ].
 	session ifNotNil: [
-		| modes |
 		modes := session availableModes.
 		(modes notNil and: [ modes notEmpty ])
 			ifTrue: [

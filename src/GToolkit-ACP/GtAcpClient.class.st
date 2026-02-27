@@ -192,11 +192,17 @@ GtAcpClient >> handlePermissionRequest: params requestId: anId [
 
 { #category : 'private' }
 GtAcpClient >> handleSessionUpdate: params [
-	| sessionId session |
+	| sessionId session update updateType beforeCount afterCount shouldAnnounce |
 	sessionId := params at: 'sessionId'.
 	session := sessions at: sessionId ifAbsent: [ ^ self ].
-	session processUpdate: (params at: 'update').
-	announcer announce: GtAcpClientUpdated new
+	update := params at: 'update'.
+	updateType := update at: 'sessionUpdate' ifAbsent: [ '' ].
+	beforeCount := session messages size.
+	session processUpdate: update.
+	afterCount := session messages size.
+	shouldAnnounce := (afterCount ~= beforeCount)
+		or: [ #('current_mode_update' 'available_commands_update' 'plan') includes: updateType ].
+	shouldAnnounce ifTrue: [ announcer announce: GtAcpClientUpdated new ]
 ]
 
 { #category : 'initialization' }

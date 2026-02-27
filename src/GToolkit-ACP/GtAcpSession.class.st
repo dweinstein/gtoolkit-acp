@@ -330,6 +330,16 @@ GtAcpSession >> markCurrentMessageComplete [
 			messages last markComplete ] ]
 ]
 
+{ #category : 'private' }
+GtAcpSession >> messageContainingToolCallId: aToolCallId [
+	^ messages
+		detect: [ :msg |
+			msg contentItems anySatisfy: [ :item |
+				(item isKindOf: GtAcpToolCall)
+					and: [ item toolCallId = aToolCallId ] ] ]
+		ifNone: [ nil ]
+]
+
 { #category : 'accessing' }
 GtAcpSession >> messages [
 	^ messages
@@ -408,18 +418,18 @@ GtAcpSession >> processPlan: aDictionary [
 
 { #category : 'processing' }
 GtAcpSession >> processToolCall: aDictionary [
-	| message toolCall toolCallId |
+	| message toolCall toolCallId existingMessage |
 	message := self currentAssistantMessage.
 	toolCallId := aDictionary at: 'toolCallId' ifAbsent: [ nil ].
-	
-	"Check if this tool call already exists in our registry"
+
 	toolCallId ifNotNil: [
 		(self toolCallsById includesKey: toolCallId) ifTrue: [
 			(self toolCallsById at: toolCallId) applyUpdate: aDictionary.
+			existingMessage := self messageContainingToolCallId: toolCallId.
+			existingMessage ifNotNil: [ existingMessage announcer announce: GtAcpMessageUpdated new ].
 			announcer announce: GtAcpSessionUpdated new.
 			^ self ] ].
-	
-	"New tool call - create and register it"
+
 	toolCall := GtAcpToolCall fromDictionary: aDictionary.
 	toolCallId ifNotNil: [ self toolCallsById at: toolCallId put: toolCall ].
 	message addToolCall: toolCall.
@@ -428,10 +438,12 @@ GtAcpSession >> processToolCall: aDictionary [
 
 { #category : 'processing' }
 GtAcpSession >> processToolCallUpdate: aDictionary [
-	| toolCall toolCallId |
+	| toolCall toolCallId message |
 	toolCallId := aDictionary at: 'toolCallId'.
 	toolCall := self toolCallsById at: toolCallId ifAbsent: [ ^ self ].
 	toolCall applyUpdate: aDictionary.
+	message := self messageContainingToolCallId: toolCallId.
+	message ifNotNil: [ message announcer announce: GtAcpMessageUpdated new ].
 	announcer announce: GtAcpSessionUpdated new
 ]
 

@@ -63,15 +63,15 @@ GtAcpMessageElement >> message [
 
 { #category : 'accessing' }
 GtAcpMessageElement >> message: aGtAcpMessage [
-	message ifNotNil: [ 
-		message announcer unsubscribe: subscriber ].
+	message ifNotNil: [
+		message announcer unsubscribe: self ].
 	message := aGtAcpMessage.
 	self updateRole.
 	self updateContent.
 	self updateThinking.
-	message announcer 
-		when: GtAcpMessageUpdated 
-		send: #onMessageUpdated: 
+	message announcer
+		when: GtAcpMessageUpdated
+		send: #onMessageUpdated:
 		to: self
 ]
 
@@ -97,7 +97,7 @@ GtAcpMessageElement >> updateContent [
 	| items existingChildren |
 	items := message contentItems.
 	existingChildren := contentContainer children asOrderedCollection.
-	
+
 	items withIndexDo: [ :item :index |
 		index <= existingChildren size
 			ifTrue: [
@@ -111,18 +111,19 @@ GtAcpMessageElement >> updateContent [
 					ifFalse: [
 						(item isKindOf: GtAcpToolCall)
 							ifTrue: [
-								((existing isKindOf: GtAcpToolCallElement) and: [ existing toolCall toolCallId = item toolCallId ])
+								((existing isKindOf: GtAcpToolCallElement)
+									and: [ existing toolCall toolCallId = item toolCallId ])
 									ifTrue: [ existing update ]
-									ifFalse: [ contentContainer replaceChild: existing with: (GtAcpToolCallElement new toolCall: item) ] ]
-							ifFalse: [ "unknown item type - skip" ] ] ]
+									ifFalse: [
+										contentContainer replaceChild: existing with: (GtAcpToolCallElement new toolCall: item) ] ]
+							ifFalse: [  ] ] ]
 			ifFalse: [
 				(item isKindOf: GtAcpTextBlock)
 					ifTrue: [ contentContainer addChild: (self newEditorFor: item) ]
 					ifFalse: [
 						(item isKindOf: GtAcpToolCall)
 							ifTrue: [ contentContainer addChild: (GtAcpToolCallElement new toolCall: item) ] ] ] ].
-	
-	"Remove excess trailing children"
+
 	[ contentContainer children size > items size ] whileTrue: [
 		contentContainer removeChildAt: contentContainer children size ]
 ]

@@ -147,7 +147,7 @@ GtAcpClient >> gtRemoveActionFor: anAction [
 	self isConnected ifTrue: [ ^ anAction noAction ].
 	^ anAction button
 		tooltip: 'Remove from registry';
-		icon: BrGlamorousVectorIcons trash;
+		icon: BrGlamorousVectorIcons bin;
 		action: [ :aButton | GtAcpClientRegistry uniqueInstance unregister: self ]
 ]
 
